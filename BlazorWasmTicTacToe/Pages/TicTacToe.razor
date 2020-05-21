@@ -1,0 +1,162 @@
+﻿@page "/tictactoe"
+@using BlazorWasmTicTacToe.Models;
+@using BlazorWasmTicTacToe.Enums;
+
+<h1>ConnectFour</h1>
+
+@code {
+
+    GameBoard board = new GameBoard();
+    PieceStyle currentTurn = PieceStyle.X;
+    WinningPlay winningPlay;
+
+    private void PieceClicked(int x, int y)
+    {
+        if (winningPlay != null) { return; }
+
+        GamePiece clickedSpace = board.Board[x, y];
+        clickedSpace.Style = currentTurn;
+
+        winningPlay = GetWinner();
+        if (winningPlay == null)
+        {
+            SwitchTurns();
+        }
+
+    }
+    private void SwitchTurns()
+    {
+        if (currentTurn == PieceStyle.X)
+        {
+            currentTurn = PieceStyle.O;
+        }
+        else
+        {
+            currentTurn = PieceStyle.X;
+        }
+    }
+
+    private WinningPlay GetWinner()
+    {
+        WinningPlay winningPlay = null;
+
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                winningPlay = EvaluatePieceForWinner(i, j, EvaluationDirection.Up);
+                if (winningPlay != null) { return winningPlay; }
+
+                winningPlay = EvaluatePieceForWinner(i, j, EvaluationDirection.UpRight);
+                if (winningPlay != null) { return winningPlay; }
+
+                winningPlay = EvaluatePieceForWinner(i, j, EvaluationDirection.Right);
+                if (winningPlay != null) { return winningPlay; }
+
+                winningPlay = EvaluatePieceForWinner(i, j, EvaluationDirection.DownRight);
+                if (winningPlay != null) { return winningPlay; }
+            }
+        }
+
+        return winningPlay;
+
+    }
+    private WinningPlay EvaluatePieceForWinner(int i, int j, EvaluationDirection dir)
+    {
+        GamePiece currentPiece = board.Board[i, j];
+        if (currentPiece.Style == PieceStyle.Blank)
+        {
+            return null;
+        }
+
+        int inARow = 1;
+        int iNext = i;
+        int jNext = j;
+
+        var winningMoves = new List<string>();
+
+        while (inARow < 3)
+        {
+            switch (dir)
+            {
+                case EvaluationDirection.Up:
+                    jNext = jNext - 1;
+                    break;
+                case EvaluationDirection.UpRight:
+                    iNext = iNext + 1;
+                    jNext = jNext - 1;
+                    break;
+                case EvaluationDirection.Right:
+                    iNext = iNext + 1;
+                    break;
+                case EvaluationDirection.DownRight:
+                    iNext = iNext + 1;
+                    jNext = jNext + 1;
+                    break;
+            }
+            if (iNext < 0 || iNext >= 3 || jNext < 0 || jNext >= 3) { break; }
+            if (board.Board[iNext, jNext].Style == currentPiece.Style)
+            {
+                winningMoves.Add($"{iNext},{jNext}");
+                inARow++;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        if (inARow >= 3)
+        {
+            winningMoves.Add($"{i},{j}");
+
+            return new WinningPlay()
+            {
+                WinningMoves = winningMoves,
+                WinningStyle = currentPiece.Style,
+                WinningDirection = dir,
+            };
+        }
+
+        return null;
+    }
+    private void Reset()
+    {
+        board = new GameBoard();
+        currentTurn = PieceStyle.X;
+        winningPlay = null;
+    }
+
+    private bool IsGamePieceAWinningPiece(WinningPlay winningPlay, int i, int j)
+    {
+        return winningPlay?.WinningMoves?.Contains($"{i},{j}") ?? false;
+    }
+}
+
+
+@if (winningPlay == null)
+{
+    <h2>@currentTurn's Turn!</h2>
+
+}
+else
+{
+    <h2>@winningPlay.WinningStyle Wins! <button class="btn btn-success" @onclick="@(() => Reset())">Reset</button></h2>
+}
+
+<div class="board">
+    @for (int i = 0; i < 3; i++)
+    {
+        <div class="column">
+            @for (int j = 0; j < 3; j++)
+            {
+                int x = i;
+                int y = j;
+                <div class="gamepiece
+                         @board.Board[i,j].Style.ToString().ToLower()" @onclick="@(() => PieceClicked(x,y))"
+                     style="@(IsGamePieceAWinningPiece(winningPlay, i, j)? "opacity: 0.6" : "")"></div>
+            }
+        </div>
+    }
+</div>
+
