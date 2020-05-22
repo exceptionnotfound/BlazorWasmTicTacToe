@@ -14,10 +14,5 @@ namespace BlazorWasmTicTacToe.Models
         {
             Style = PieceStyle.Blank;
         }
-
-        public GamePiece(PieceStyle color)
-        {
-            Style = color;
-        }
     }
 }

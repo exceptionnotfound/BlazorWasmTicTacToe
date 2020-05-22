@@ -1,174 +1,20 @@
 ﻿@page "/tictactoe"
 @using BlazorWasmTicTacToe.Models;
-@using BlazorWasmTicTacToe.Enums;
 
-<h1>TicTacToe</h1>
+<h1>Tic Tac Toe</h1>
 
 @code {
-
     GameBoard board = new GameBoard();
-    PieceStyle currentTurn = PieceStyle.X;
-    WinningPlay winningPlay;
-    bool gameIsADraw;
-    bool gameComplete => winningPlay != null || gameIsADraw;
-
-    private void PieceClicked(int x, int y)
-    {
-        if (gameComplete) { return; }
-
-        GamePiece clickedSpace = board.Board[x, y];
-        clickedSpace.Style = currentTurn;
-
-        winningPlay = GetWinner();
-
-        gameIsADraw = GameIsADraw();
-
-        if (!gameComplete)
-        {
-            SwitchTurns();
-        }
-
-    }
-    private void SwitchTurns()
-    {
-        if (currentTurn == PieceStyle.X)
-        {
-            currentTurn = PieceStyle.O;
-        }
-        else
-        {
-            currentTurn = PieceStyle.X;
-        }
-    }
-
-    private WinningPlay GetWinner()
-    {
-        WinningPlay winningPlay = null;
-
-        for (int i = 0; i < 3; i++)
-        {
-            for (int j = 0; j < 3; j++)
-            {
-                winningPlay = EvaluatePieceForWinner(i, j, EvaluationDirection.Up);
-                if (winningPlay != null) { return winningPlay; }
-
-                winningPlay = EvaluatePieceForWinner(i, j, EvaluationDirection.UpRight);
-                if (winningPlay != null) { return winningPlay; }
-
-                winningPlay = EvaluatePieceForWinner(i, j, EvaluationDirection.Right);
-                if (winningPlay != null) { return winningPlay; }
-
-                winningPlay = EvaluatePieceForWinner(i, j, EvaluationDirection.DownRight);
-                if (winningPlay != null) { return winningPlay; }
-            }
-        }
-
-        return winningPlay;
-
-    }
-    private bool GameIsADraw()
-    {
-        int pieceBlankCount = 0;
-
-        for (int i = 0; i < 3; i++)
-        {
-            for (int j = 0; j < 3; j++)
-            {
-                pieceBlankCount = board.Board[i, j].Style == PieceStyle.Blank
-                                    ? pieceBlankCount + 1
-                                    : pieceBlankCount;
-            }
-        }
-
-        return pieceBlankCount == 0;
-    }
-    private WinningPlay EvaluatePieceForWinner(int i, int j, EvaluationDirection dir)
-    {
-        GamePiece currentPiece = board.Board[i, j];
-        if (currentPiece.Style == PieceStyle.Blank)
-        {
-            return null;
-        }
-
-        int inARow = 1;
-        int iNext = i;
-        int jNext = j;
-
-        var winningMoves = new List<string>();
-
-        while (inARow < 3)
-        {
-            switch (dir)
-            {
-                case EvaluationDirection.Up:
-                    jNext = jNext - 1;
-                    break;
-                case EvaluationDirection.UpRight:
-                    iNext = iNext + 1;
-                    jNext = jNext - 1;
-                    break;
-                case EvaluationDirection.Right:
-                    iNext = iNext + 1;
-                    break;
-                case EvaluationDirection.DownRight:
-                    iNext = iNext + 1;
-                    jNext = jNext + 1;
-                    break;
-            }
-            if (iNext < 0 || iNext >= 3 || jNext < 0 || jNext >= 3) { break; }
-            if (board.Board[iNext, jNext].Style == currentPiece.Style)
-            {
-                winningMoves.Add($"{iNext},{jNext}");
-                inARow++;
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        if (inARow >= 3)
-        {
-            winningMoves.Add($"{i},{j}");
-
-            return new WinningPlay()
-            {
-                WinningMoves = winningMoves,
-                WinningStyle = currentPiece.Style,
-                WinningDirection = dir,
-            };
-        }
-
-        return null;
-    }
-    private void Reset()
-    {
-        board = new GameBoard();
-        currentTurn = PieceStyle.X;
-        winningPlay = null;
-        gameIsADraw = false;
-    }
-
-    private bool IsGamePieceAWinningPiece(WinningPlay winningPlay, int i, int j)
-    {
-        return winningPlay?.WinningMoves?.Contains($"{i},{j}") ?? false;
-    }
-
-    private string GetGameCompleteMessage()
-    {
-        return winningPlay != null ? $"{winningPlay.WinningStyle} Wins!" : "It's a Draw";
-    }
 }
 
 
-@if (!gameComplete)
+@if (!board.GameComplete)
 {
-    <h2>@currentTurn's Turn!</h2>
-
+    <h2>@board.CurrentTurn's Turn!</h2>
 }
 else
 {
-    <h2>@GetGameCompleteMessage() <button class="btn btn-success" @onclick="@(() => Reset())">Reset</button></h2>
+    <h2>@board.GetGameCompleteMessage() <button class="btn btn-success" @onclick="@(() => board.Reset())">Reset</button></h2>
 }
 
 <div class="board">
@@ -180,8 +26,8 @@ else
                 int x = i;
                 int y = j;
                 <div class="gamepiece
-                         @board.Board[i,j].Style.ToString().ToLower()" @onclick="@(() => PieceClicked(x,y))"
-                     style="@(IsGamePieceAWinningPiece(winningPlay, i, j)? "opacity: 0.6" : "")"></div>
+                         @board.Board[i,j].Style.ToString().ToLower()" @onclick="@(() => board.PieceClicked(x,y))"
+                     style="@(board.IsGamePieceAWinningPiece(i, j)? "opacity: 0.6" : "")"></div>
             }
         </div>
     }
